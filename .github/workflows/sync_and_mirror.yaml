@@ -42,5 +42,5 @@ jobs:
         with:
           host: https://codeberg.org
           create: true
-          username: "batyrmuhadov"
+          username: ${{ secrets.CODEBERG_USERNAME }}
           password: ${{ secrets.CODEBERG_TOKEN }}
