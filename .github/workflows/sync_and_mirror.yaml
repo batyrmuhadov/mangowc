@@ -1,0 +1,46 @@
+name: "Sync and Mirror"
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  sync-and-mirror:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure git and gh are available
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git gh
+
+      - name: Authenticate gh with GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "${GITHUB_TOKEN}" | gh auth login --with-token
+
+      - name: Sync with upstream (current branch)
+        env:
+          REPOSITORY: ${{ github.repository }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          gh repo sync "$REPOSITORY" -b "$BRANCH_NAME"
+
+      - name: Fetch all refs (branches & tags)
+        run: |
+          git fetch --all --prune --tags
+
+      - name: Mirror to Codeberg
+        uses: cssnr/mirror-repository-action@v1
+        with:
+          host: https://codeberg.org
+          create: true
+          username: "batyrmuhadov"
+          password: ${{ secrets.CODEBERG_TOKEN }}
