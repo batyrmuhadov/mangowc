@@ -80,7 +80,7 @@ uint32_t cursor_hide_timeout = 0;
 
 uint32_t swipe_min_threshold = 1;
 
-int inhibit_regardless_of_visibility =
+int idleinhibit_ignore_visible =
 	0; /* 1 means idle inhibitors will disable idle tracking even if it's
 		  surface isn't visible  */
 uint32_t borderpx = 4; /* border pixel of windows */
@@ -177,6 +177,8 @@ LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER
 */
 enum libinput_config_click_method click_method =
 	LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
+
+double axis_scroll_factor = 1.0;
 
 /* You can choose between:
 LIBINPUT_CONFIG_SEND_EVENTS_ENABLED

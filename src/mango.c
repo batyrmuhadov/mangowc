@@ -1392,7 +1392,7 @@ void applyrules(Client *c) {
 
 	// if no geom rule hit and is normal winodw, use the center pos and record
 	// the hit size
-	if (!hit_rule_pos && (!client_is_x11(c) || !client_is_x11_popup(c))) {
+	if (!hit_rule_pos && !client_is_x11(c)) {
 		c->float_geom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
 	}
 
@@ -1711,10 +1711,11 @@ axisnotify(struct wl_listener *listener, void *data) {
 	 * implemented checking the event's orientation and the delta of the event
 	 */
 	/* Notify the client with pointer focus of the axis event. */
-	wlr_seat_pointer_notify_axis(seat, // 滚轮事件发送给客户端也就是窗口
-								 event->time_msec, event->orientation,
-								 event->delta, event->delta_discrete,
-								 event->source, event->relative_direction);
+	wlr_seat_pointer_notify_axis(
+		seat, // 滚轮事件发送给客户端也就是窗口
+		event->time_msec, event->orientation, event->delta * axis_scroll_factor,
+		roundf(event->delta_discrete * axis_scroll_factor), event->source,
+		event->relative_direction);
 }
 
 int ongesture(struct wlr_pointer_swipe_end_event *event) {
@@ -2001,23 +2002,26 @@ buttonpress(struct wl_listener *listener, void *data) {
 
 void checkidleinhibitor(struct wlr_surface *exclude) {
 	int inhibited = 0;
+	Client *c = NULL;
+	struct wlr_surface *surface = NULL;
 	struct wlr_idle_inhibitor_v1 *inhibitor;
 
 	wl_list_for_each(inhibitor, &idle_inhibit_mgr->inhibitors, link) {
-		struct wlr_surface *surface =
-			wlr_surface_get_root_surface(inhibitor->surface);
+		surface = wlr_surface_get_root_surface(inhibitor->surface);
 
 		if (exclude == surface) {
 			continue;
 		}
 
-		if (inhibit_regardless_of_visibility) {
+		toplevel_from_wlr_surface(inhibitor->surface, &c, NULL);
+
+		if (idleinhibit_ignore_visible) {
 			inhibited = 1;
 			break;
 		}
 
 		struct wlr_scene_tree *tree = surface->data;
-		if (!tree || tree->node.enabled) {
+		if (!tree || (tree->node.enabled && (!c || !c->animation.tagouting))) {
 			inhibited = 1;
 			break;
 		}
@@ -3726,6 +3730,10 @@ void init_client_properties(Client *c) {
 	c->force_tearing = 0;
 	c->allow_shortcuts_inhibit = SHORTCUTS_INHIBIT_ENABLE;
 	c->scroller_proportion_single = 0.0f;
+	c->float_geom.width = 0;
+	c->float_geom.height = 0;
+	c->float_geom.x = 0;
+	c->float_geom.y = 0;
 }
 
 void // old fix to 0.5
@@ -4508,7 +4516,7 @@ setfloating(Client *c, int floating) {
 		}
 
 		// 重新计算居中的坐标
-		if (!client_is_x11(c) || !client_is_x11_popup(c))
+		if (!client_is_x11(c))
 			target_box = setclient_coordinate_center(c, target_box, 0, 0);
 		backup_box = c->geom;
 		hit = applyrulesgeom(c);

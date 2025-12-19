@@ -238,7 +238,7 @@ typedef struct {
 
 	uint32_t axis_bind_apply_timeout;
 	uint32_t focus_on_activate;
-	int inhibit_regardless_of_visibility;
+	int idleinhibit_ignore_visible;
 	int sloppyfocus;
 	int warpcursor;
 
@@ -264,6 +264,8 @@ typedef struct {
 	uint32_t click_method;
 	uint32_t send_events_mode;
 	uint32_t button_map;
+
+	double axis_scroll_factor;
 
 	int blur;
 	int blur_layer;
@@ -1456,8 +1458,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->focus_on_activate = atoi(value);
 	} else if (strcmp(key, "numlockon") == 0) {
 		config->numlockon = atoi(value);
-	} else if (strcmp(key, "inhibit_regardless_of_visibility") == 0) {
-		config->inhibit_regardless_of_visibility = atoi(value);
+	} else if (strcmp(key, "idleinhibit_ignore_visible") == 0) {
+		config->idleinhibit_ignore_visible = atoi(value);
 	} else if (strcmp(key, "sloppyfocus") == 0) {
 		config->sloppyfocus = atoi(value);
 	} else if (strcmp(key, "warpcursor") == 0) {
@@ -1504,6 +1506,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->send_events_mode = atoi(value);
 	} else if (strcmp(key, "button_map") == 0) {
 		config->button_map = atoi(value);
+	} else if (strcmp(key, "axis_scroll_factor") == 0) {
+		config->axis_scroll_factor = atof(value);
 	} else if (strcmp(key, "gappih") == 0) {
 		config->gappih = atoi(value);
 	} else if (strcmp(key, "gappiv") == 0) {
@@ -2735,8 +2739,8 @@ void override_config(void) {
 	axis_bind_apply_timeout =
 		CLAMP_INT(config.axis_bind_apply_timeout, 0, 1000);
 	focus_on_activate = CLAMP_INT(config.focus_on_activate, 0, 1);
-	inhibit_regardless_of_visibility =
-		CLAMP_INT(config.inhibit_regardless_of_visibility, 0, 1);
+	idleinhibit_ignore_visible =
+		CLAMP_INT(config.idleinhibit_ignore_visible, 0, 1);
 	sloppyfocus = CLAMP_INT(config.sloppyfocus, 0, 1);
 	warpcursor = CLAMP_INT(config.warpcursor, 0, 1);
 	focus_cross_monitor = CLAMP_INT(config.focus_cross_monitor, 0, 1);
@@ -2780,6 +2784,7 @@ void override_config(void) {
 	click_method = CLAMP_INT(config.click_method, 0, 2);
 	send_events_mode = CLAMP_INT(config.send_events_mode, 0, 2);
 	button_map = CLAMP_INT(config.button_map, 0, 1);
+	axis_scroll_factor = CLAMP_FLOAT(config.axis_scroll_factor, 0.1f, 10.0f);
 
 	// 外观设置
 	gappih = CLAMP_INT(config.gappih, 0, 1000);
@@ -2907,6 +2912,7 @@ void set_value_default() {
 	config.exchange_cross_monitor = exchange_cross_monitor;
 	config.scratchpad_cross_monitor = scratchpad_cross_monitor;
 	config.focus_cross_tag = focus_cross_tag;
+	config.axis_scroll_factor = axis_scroll_factor;
 	config.view_current_to_back = view_current_to_back;
 	config.single_scratchpad = single_scratchpad;
 	config.xwayland_persistence = xwayland_persistence;
@@ -2922,8 +2928,8 @@ void set_value_default() {
 	config.enable_floating_snap = enable_floating_snap;
 	config.swipe_min_threshold = swipe_min_threshold;
 
-	config.inhibit_regardless_of_visibility =
-		inhibit_regardless_of_visibility; /* 1 means idle inhibitors will
+	config.idleinhibit_ignore_visible =
+		idleinhibit_ignore_visible; /* 1 means idle inhibitors will
 									  disable idle tracking even if it's
 									  surface isn't visible
 									*/
